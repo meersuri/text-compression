@@ -19,3 +19,18 @@ public:
 	HuffmanCompressor(std::string in_file, std::string out_file);
 	virtual void encode() override;
 };
+
+class LZ77Compressor : public Compressor
+{
+public:
+	LZ77Compressor(std::string in_file, std::string out_file);
+	virtual void encode() override;
+};
+
+
+class ArithmeticCompressor : public Compressor
+{
+public:
+	ArithmeticCompressor(std::string in_file, std::string out_file);
+	virtual void encode() override;
+};
