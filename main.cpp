@@ -12,6 +12,6 @@ int main(int argc, char** argv)
 	std::string in_file = argv[1];
 	std::string out_file = argv[2];
 	Compressor* comp = new HuffmanCompressor(in_file, out_file);
-	comp->compress();
+	comp->encode();
 	return 0;
 }

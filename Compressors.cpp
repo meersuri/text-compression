@@ -21,7 +21,7 @@ HuffmanCompressor::HuffmanCompressor(std::string in_file, std::string out_file):
 {
 }
 
-void HuffmanCompressor::compress() 
+void HuffmanCompressor::encode() 
 {
 	std::unordered_map<char, uint64_t> symbol_counts;
 	for(int i = 0; i < m_data.size(); ++i)
@@ -102,7 +102,8 @@ void HuffmanCompressor::compress()
 		codebook.insert(std::make_pair(symbol, codes[len][code_ptrs[len]++]));
 	}
 
-	for(auto it: codebook)
-		std::cout << it.first << " " << it.second << '\n';
+	for(auto c: m_data)
+		m_encoded += codebook[c];
+	std::cout << m_encoded << '\n';
 
 }
