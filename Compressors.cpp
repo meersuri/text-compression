@@ -42,17 +42,17 @@ void HuffmanCompressor::encode()
 		heap_ptrs[i + alphabet_size] = it->second; 
 	}
 
-	std::make_heap(heap_ptrs.begin(), heap_ptrs.begin() + alphabet_size, [heap_ptrs](const uint64_t& a, const uint64_t& b){ return heap_ptrs[a] > heap_ptrs[b];});
+	std::make_heap(heap_ptrs.begin(), heap_ptrs.begin() + alphabet_size, [heap_ptrs](const auto& a, const auto& b){ return heap_ptrs[a] > heap_ptrs[b];});
 	for(int i = 0; i < alphabet_size - 1; ++i)
 	{
 		uint64_t rarest_1 = heap_ptrs[0];
-	       	std::pop_heap(heap_ptrs.begin(), heap_ptrs.begin() + alphabet_size - i,  [heap_ptrs](const uint64_t& a, const uint64_t& b){ return heap_ptrs[a] > heap_ptrs[b];});
+	       	std::pop_heap(heap_ptrs.begin(), heap_ptrs.begin() + alphabet_size - i,  [heap_ptrs](const auto& a, const auto& b){ return heap_ptrs[a] > heap_ptrs[b];});
 		uint64_t rarest_2 = heap_ptrs[0];
 		heap_ptrs[0] = alphabet_size - i - 1;
 		heap_ptrs[alphabet_size - i - 1] = heap_ptrs[rarest_1] + heap_ptrs[rarest_2]; 
 		heap_ptrs[rarest_1] = alphabet_size - i - 1;
 		heap_ptrs[rarest_2] = alphabet_size - i - 1;
-		std::make_heap(heap_ptrs.begin(), heap_ptrs.begin() + alphabet_size - i - 1, [heap_ptrs](const uint64_t& a, const uint64_t& b){ return heap_ptrs[a] > heap_ptrs[b];});
+		std::make_heap(heap_ptrs.begin(), heap_ptrs.begin() + alphabet_size - i - 1, [heap_ptrs](const auto& a, const auto& b){ return heap_ptrs[a] > heap_ptrs[b];});
 	}
 
 	std::vector<int> code_lens;
