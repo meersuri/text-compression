@@ -23,8 +23,12 @@ public:
 class LZ77Compressor : public Compressor
 {
 public:
-	LZ77Compressor(std::string in_file, std::string out_file);
+	LZ77Compressor(std::string in_file, std::string out_file, size_t left_buf_len,
+		       	size_t right_buf_len);
 	virtual void encode() override;
+private:
+	size_t m_left_buf_len;
+	size_t m_right_buf_len;
 };
 
 

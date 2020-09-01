@@ -17,7 +17,8 @@ Compressor::Compressor(std::string in_file, std::string out_file): m_in_file(in_
 		m_data.push_back(c);
 }
 
-HuffmanCompressor::HuffmanCompressor(std::string in_file, std::string out_file): Compressor(in_file, out_file)
+HuffmanCompressor::HuffmanCompressor(std::string in_file, std::string out_file):
+       	Compressor(in_file, out_file)
 {
 }
 
@@ -42,17 +43,23 @@ void HuffmanCompressor::encode()
 		heap_ptrs[i + alphabet_size] = it->second; 
 	}
 
-	std::make_heap(heap_ptrs.begin(), heap_ptrs.begin() + alphabet_size, [heap_ptrs](const auto& a, const auto& b){ return heap_ptrs[a] > heap_ptrs[b];});
+	std::make_heap(heap_ptrs.begin(), heap_ptrs.begin() + alphabet_size, 
+			[heap_ptrs](const auto& a, const auto& b)
+			{ return heap_ptrs[a] > heap_ptrs[b];});
 	for(int i = 0; i < alphabet_size - 1; ++i)
 	{
 		uint64_t rarest_1 = heap_ptrs[0];
-	       	std::pop_heap(heap_ptrs.begin(), heap_ptrs.begin() + alphabet_size - i,  [heap_ptrs](const auto& a, const auto& b){ return heap_ptrs[a] > heap_ptrs[b];});
+	       	std::pop_heap(heap_ptrs.begin(), heap_ptrs.begin() + alphabet_size - i,
+			      	[heap_ptrs](const auto& a, const auto& b)
+				{ return heap_ptrs[a] > heap_ptrs[b];});
 		uint64_t rarest_2 = heap_ptrs[0];
 		heap_ptrs[0] = alphabet_size - i - 1;
 		heap_ptrs[alphabet_size - i - 1] = heap_ptrs[rarest_1] + heap_ptrs[rarest_2]; 
 		heap_ptrs[rarest_1] = alphabet_size - i - 1;
 		heap_ptrs[rarest_2] = alphabet_size - i - 1;
-		std::make_heap(heap_ptrs.begin(), heap_ptrs.begin() + alphabet_size - i - 1, [heap_ptrs](const auto& a, const auto& b){ return heap_ptrs[a] > heap_ptrs[b];});
+		std::make_heap(heap_ptrs.begin(), heap_ptrs.begin() + alphabet_size - i - 1,
+			       	[heap_ptrs](const auto& a, const auto& b)
+				{ return heap_ptrs[a] > heap_ptrs[b];});
 	}
 
 	std::vector<int> code_lens;
@@ -114,3 +121,13 @@ void HuffmanCompressor::encode()
 	std::cout << m_encoded << '\n';
 
 }
+
+LZ77Compressor::LZ77Compressor(std::string in_file, std::string out_file, 
+		size_t left_buf_len, size_t right_buf_len): Compressor(in_file, out_file),
+		m_left_buf_len(left_buf_len), m_right_buf_len(right_buf_len)
+{
+}
+
+void LZ77Compressor::encode()
+{
+
