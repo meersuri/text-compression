@@ -5,6 +5,7 @@
 #include<vector>
 #include<algorithm>
 #include<unordered_map>
+#include"utils.h"
 #include"Compressors.h"
 
 Compressor::Compressor(std::string in_file, std::string out_file): m_in_file(in_file),
@@ -53,10 +54,9 @@ void HuffmanCompressor::compress()
 		heap_ptrs[rarest_2] = alphabet_size - i - 1;
 		std::make_heap(heap_ptrs.begin(), heap_ptrs.begin() + alphabet_size - i - 1, [heap_ptrs](const uint64_t& a, const uint64_t& b){ return heap_ptrs[a] > heap_ptrs[b];});
 	}
-//	for(int i = 0; i < heap_ptrs.size(); ++i)
-//		std::cout << heap_ptrs[i] << " ";
-//	std::cout << "\n";
+
 	std::vector<int> code_lens;
+	int max_code_len = 0;
 	for(int i = 0; i < alphabet_size; ++i)
 	{
 		int n_steps = 1;
@@ -67,8 +67,42 @@ void HuffmanCompressor::compress()
 			++n_steps;
 		}
 		code_lens.push_back(n_steps);
+		max_code_len = std::max(max_code_len, n_steps);
 	}
+	
+	std::vector<int> len_to_n_codes(max_code_len + 1, 0);
 	for(int i = 0; i < code_lens.size(); ++i)
-		std::cout << code_lens[i] << " ";
-	std::cout << "\n";
+		len_to_n_codes[code_lens[i]]++;
+
+	std::vector<std::vector<std::string>> codes(len_to_n_codes.size());
+	int val = 0;
+	for(int i = 0; i < len_to_n_codes.size(); ++i)
+	{
+		if(!len_to_n_codes[i])
+		{
+			val *= 2;
+			continue;
+		}
+		for(int j = 0; j < len_to_n_codes[i]; ++j)
+		{
+			std::string codeword;
+			to_bin_str(val++, i, codeword);
+			codes[i].emplace_back(codeword);
+		}
+		val *= 2;
+	}
+
+	std::unordered_map<char, std::string> codebook;
+	std::vector<int> code_ptrs(len_to_n_codes.size(), 0);
+	for(auto it = symbol_counts.begin(); it != symbol_counts.end(); ++it)
+	{
+		char symbol = it->first;
+		auto i = std::distance(symbol_counts.begin(), it);
+		int len = code_lens[i];
+		codebook.insert(std::make_pair(symbol, codes[len][code_ptrs[len]++]));
+	}
+
+	for(auto it: codebook)
+		std::cout << it.first << " " << it.second << '\n';
+
 }
