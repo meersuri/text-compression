@@ -86,7 +86,14 @@ void HuffmanCompressor::encode()
 		for(int j = 0; j < len_to_n_codes[i]; ++j)
 		{
 			std::string codeword;
-			to_bin_str(val++, i, codeword);
+			try
+			{
+				to_bin_str(val++, i, codeword);
+			}
+			catch(const std::invalid_argument& e)
+			{
+				std::cout << e.what() << '\n';
+			}
 			codes[i].emplace_back(codeword);
 		}
 		val *= 2;
