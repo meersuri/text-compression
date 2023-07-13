@@ -3,38 +3,38 @@
 #include<string>
 #include<algorithm>
 #include<cassert>
+#include<fstream>
 
-template<class T>
-std::vector<T> pack(const std::vector<std::string>& encoded) {
-    std::vector<T> packed;
-    T chunk = 0;
-    uint8_t chunk_width = sizeof(T)*8;
-    uint8_t pos = 0;
+std::vector<uint8_t> pack(const std::vector<std::string>& encoded) {
+    std::vector<uint8_t> packed;
+    uint8_t chunk = 0;
+    uint8_t chunk_width = 8;
+    uint8_t pos = -1;
     for (const auto& code: encoded) {
-        if (pos + code.size() > chunk_width) {
-            packed.push_back(chunk << (chunk_width - pos - 1));
-            chunk = 0;
-            pos = 0;
-        }
         for (int i = 0; i < code.size(); ++i) {
+            if (pos == chunk_width - 1) {
+                packed.push_back(chunk);
+                chunk = 0;
+                pos = -1;
+            }
+            chunk <<= 1;
             if (code[i] == '1')
                 chunk |= 1;
-            if (pos < chunk_width - 1) {
-                chunk <<= 1;
-                ++pos;
-            }
+            ++pos;
         }
     }
-    packed.push_back(chunk << (chunk_width - pos - 1));
+    if (pos < chunk_width - 1) {
+        chunk <<= chunk_width - pos - 1;
+        packed.push_back(chunk);
+    }
     return packed;
 }
 
-template<class T>
-std::vector<std::string> unpack(const std::vector<T>& packed, std::vector<std::string> codes) {
+std::vector<std::string> unpack(const std::vector<uint8_t>& packed, std::vector<std::string> codes) {
     std::vector<std::string> encoded;
-    uint8_t chunk_width = sizeof(T)*8;
-    for (const auto& chunk: packed) {
-        std::string code;
+    uint8_t chunk_width = 8;
+    std::string code;
+    for (const uint8_t& chunk: packed) {
         for (int i = 0; i < chunk_width; ++i) {
             if (chunk & (1 << chunk_width - i - 1))
                 code += "1";
@@ -49,16 +49,59 @@ std::vector<std::string> unpack(const std::vector<T>& packed, std::vector<std::s
     return encoded;
 }
 
+void save(std::string fpath, const std::vector<uint8_t>& packed) {
+    auto file = std::ofstream(fpath, std::ios::binary);
+    if (!file.is_open())
+        throw std::runtime_error("Couldn't open file");
+    file.put(static_cast<uint8_t>(packed.size()));
+    for (const uint8_t& chunk: packed)
+        file.put(chunk);
+    file.put('\0');
+    file.close();
+}
+
+std::vector<uint8_t> load(std::string fpath) {
+    auto file = std::ifstream(fpath, std::ios::binary);
+    if (!file.is_open())
+        throw std::runtime_error("Couldn't open file");
+    std::vector<uint8_t> packed;
+    uint8_t msg_len = file.get();
+    uint8_t chunk = 0;
+    while ((chunk = file.get()) != '\0')
+        packed.push_back(chunk);
+    return packed;
+}
+
 int main() {
-    std::vector<std::string> codes{"01", "101", "1100", "1110", "11111"};
-    std::vector<std::string> encoded{"01", "1110", "1100", "1100", "01", "11111", "1100"};
-    auto packed = pack<uint16_t>(encoded);
+    std::vector<std::string> codes{
+        "01",
+        "101",
+        "1100",
+        "1110",
+        "11111"
+    };
+    std::vector<std::string> encoded{
+        "01",
+        "1110",
+        "1100",
+        "1100",
+        "01",
+        "11111",
+        "1100",
+        "101",
+        "11111",
+        "01",
+        "1110"
+    };
+    auto packed = pack(encoded);
+    save("packed.bin", packed);
     std::cout << "packed:\n";
     for (const auto& x: packed)
-        std::cout << x << ",";
+        std::cout << static_cast<int>(x) << ",";
     std::cout << '\n';
     std::cout << "unpacked:\n";
-    auto unpacked = unpack<uint16_t>(packed, codes);
+    auto loaded = load("packed.bin");
+    auto unpacked = unpack(loaded, codes);
     for (const auto& x: unpacked)
         std::cout << x << ",";
     std::cout << '\n';
