@@ -4,6 +4,7 @@
 #include<algorithm>
 #include<cassert>
 #include<fstream>
+#include<cstdio>
 
 std::vector<uint8_t> pack(const std::vector<std::string>& encoded) {
     std::vector<uint8_t> packed;
@@ -56,7 +57,7 @@ void save(std::string fpath, const std::vector<uint8_t>& packed) {
     file.put(static_cast<uint8_t>(packed.size()));
     for (const uint8_t& chunk: packed)
         file.put(chunk);
-    file.put('\0');
+    file.put(EOF);
     file.close();
 }
 
@@ -67,12 +68,12 @@ std::vector<uint8_t> load(std::string fpath) {
     std::vector<uint8_t> packed;
     uint8_t msg_len = file.get();
     uint8_t chunk = 0;
-    while ((chunk = file.get()) != '\0')
+    while ((chunk = file.get()) != static_cast<uint8_t>(EOF))
         packed.push_back(chunk);
     return packed;
 }
 
-int main() {
+int run() {
     std::vector<std::string> codes{
         "01",
         "101",
