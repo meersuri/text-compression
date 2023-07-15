@@ -2,11 +2,12 @@
 #define PACK_HPP
 
 #include <vector>
+#include <unordered_set>
 #include <string>
 
 std::vector<uint8_t> pack(const std::vector<std::string>& encoded);
 
-std::vector<std::string> unpack(const std::vector<uint8_t>& packed, std::vector<std::string> codes);
+std::vector<std::string> unpack(const std::vector<uint8_t>& packed, std::unordered_set<std::string> codes);
 
 void save(std::string fpath, const std::vector<uint8_t>& packed);
 

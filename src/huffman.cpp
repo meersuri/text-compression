@@ -4,7 +4,9 @@
 #include<queue>
 #include<cmath>
 #include<unordered_map>
+#include<unordered_set>
 #include<memory>
+#include <cassert>
 
 #include "pack.hpp"
 #include "node.hpp"
@@ -43,7 +45,6 @@ std::shared_ptr<Node<T>> Huffman<T>::_build_tree() {
         a->set_parent(parent);
         b->set_parent(parent);
         pq.push(parent);
-        std::cout << *a << " " << *b << " " << *parent <<  std::endl;
     }
     auto root = pq.top();
     pq.pop();
@@ -54,7 +55,6 @@ template<class T>
 void Huffman<T>::_dfs(std::shared_ptr<Node<T>> root, std::string code) {
     if (!root->left() && !root->right()) {
         root->set_code(code);
-        std::cout << root->symbol() << " " << root->code() << std::endl;
         return;
     }
     if (root->left())
@@ -68,9 +68,9 @@ void Huffman<T>::_dfs(std::shared_ptr<Node<T>> root, std::string code) {
 template<class T>
 void Huffman<T>::_build_codebook(std::shared_ptr<Node<T>> root) {
     _dfs(root, "");
-    std::cout << *root << std::endl;
     for (const auto &pair: _node_map) {
         _codebook[pair.first] = pair.second->code();
+        _decodebook[pair.second->code()] = pair.second;
     }
 
 }
@@ -79,18 +79,41 @@ template<class T>
 std::vector<std::string> Huffman<T>::_encode(const std::vector<T>& source) {
     std::vector<std::string> encoded;
     for (const auto &s: source) {
-        std::cout << s <<  " " << _node_map[s]->code() << '\n';
         encoded.emplace_back(_node_map[s]->code());
     }
     return encoded;
 }
 
 template<class T>
-std::vector<std::string> Huffman<T>::compress(const std::vector<T> &source) {
+std::vector<std::string> Huffman<T>::encode(const std::vector<T> &source) {
     _make_nodes(source);
     auto root = _build_tree();
     _build_codebook(root);
     return _encode(source);
+}
+
+template<class T>
+std::vector<T> Huffman<T>::_decode(const std::vector<uint8_t> &loaded) {
+    std::unordered_set<std::string> codes;
+    for (const auto &pair: _node_map)
+        codes.insert(pair.second->code());
+    std::vector<std::string> encoded = unpack(loaded, codes);
+    std::vector<T> decoded;
+    for (const auto &code: encoded) {
+        decoded.emplace_back(_decodebook[code]->symbol());
+    }
+    return decoded;
+}
+
+template<class T>
+std::vector<T> Huffman<T>::decode(const std::vector<uint8_t> &loaded) {
+    return _decode(loaded);
+}
+
+template<class T>
+std::vector<T> Huffman<T>::decode(const std::string &fpath) {
+    std::vector<uint8_t> loaded = load(fpath);
+    return _decode(loaded);
 }
 
 int main(int argc, char *argv[]) {
@@ -101,9 +124,12 @@ int main(int argc, char *argv[]) {
     std::string fpath = argv[1];
     std::vector<uint8_t> source = load(fpath);
     Huffman<uint8_t> coder;
-    auto encoded = coder.compress(source);
-    for (const auto &x: encoded)
-        std::cout << x << ",";
-    std::cout << std::endl;
+    auto encoded = coder.encode(source);
+    std::vector<uint8_t> packed = pack(encoded);
+    save("compressed.bin", packed);
+    std::vector<uint8_t> decoded = coder.decode("compressed.bin");
+    assert (decoded == source);
+    std::cout << "Success!\n";
+    std::cout << "Compressed to compressed.bin\n";
     return 0;
 }

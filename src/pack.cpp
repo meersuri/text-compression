@@ -5,6 +5,7 @@
 #include<cassert>
 #include<fstream>
 #include<cstdio>
+#include<unordered_set>
 
 std::vector<uint8_t> pack(const std::vector<std::string>& encoded) {
     std::vector<uint8_t> packed;
@@ -31,7 +32,7 @@ std::vector<uint8_t> pack(const std::vector<std::string>& encoded) {
     return packed;
 }
 
-std::vector<std::string> unpack(const std::vector<uint8_t>& packed, std::vector<std::string> codes) {
+std::vector<std::string> unpack(const std::vector<uint8_t>& packed, std::unordered_set<std::string> codes) {
     std::vector<std::string> encoded;
     uint8_t chunk_width = 8;
     std::string code;
@@ -41,7 +42,7 @@ std::vector<std::string> unpack(const std::vector<uint8_t>& packed, std::vector<
                 code += "1";
             else
                 code += "0";
-            if (std::find(codes.begin(), codes.end(), code) != codes.end()) {
+            if (codes.find(code) != codes.end()) {
                 encoded.push_back(code);
                 code = "";
             }
@@ -74,7 +75,7 @@ std::vector<uint8_t> load(std::string fpath) {
 }
 
 int run() {
-    std::vector<std::string> codes{
+    std::unordered_set<std::string> codes{
         "01",
         "101",
         "1100",
