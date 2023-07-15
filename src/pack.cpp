@@ -56,6 +56,7 @@ void save(std::string fpath, const std::vector<uint8_t>& packed) {
     if (!file.is_open())
         throw std::runtime_error("Couldn't open file");
     file.put(static_cast<uint8_t>(packed.size()));
+    file.put(static_cast<uint8_t>(packed.size() >> 8));
     for (const uint8_t& chunk: packed)
         file.put(chunk);
     file.put(EOF);
@@ -67,10 +68,24 @@ std::vector<uint8_t> load(std::string fpath) {
     if (!file.is_open())
         throw std::runtime_error("Couldn't open file");
     std::vector<uint8_t> packed;
-    uint8_t msg_len = file.get();
-    uint8_t chunk = 0;
-    while ((chunk = file.get()) != static_cast<uint8_t>(EOF))
-        packed.push_back(chunk);
+    char chunk;
+    while ((chunk = file.get()) != EOF) {
+        packed.push_back(static_cast<uint8_t>(chunk));
+    }
+    return packed;
+}
+
+std::vector<uint8_t> load_compressed(std::string fpath) {
+    auto file = std::ifstream(fpath, std::ios::binary);
+    if (!file.is_open())
+        throw std::runtime_error("Couldn't open file");
+    std::vector<uint8_t> packed;
+    uint16_t msg_len = static_cast<uint8_t>(file.get());
+    msg_len |= static_cast<uint16_t>(file.get()) << 8;
+    std::cout << "saved bytes " << int(msg_len) << std::endl;
+    for (int i = 0; i < msg_len; ++i) {
+        packed.push_back(static_cast<uint8_t>(file.get()));
+    }
     return packed;
 }
 

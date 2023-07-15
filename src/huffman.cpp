@@ -6,7 +6,7 @@
 #include<unordered_map>
 #include<unordered_set>
 #include<memory>
-#include <cassert>
+#include<cassert>
 
 #include "pack.hpp"
 #include "node.hpp"
@@ -64,7 +64,6 @@ void Huffman<T>::_dfs(std::shared_ptr<Node<T>> root, std::string code) {
     return;
 }
         
-
 template<class T>
 void Huffman<T>::_build_codebook(std::shared_ptr<Node<T>> root) {
     _dfs(root, "");
@@ -99,9 +98,13 @@ std::vector<T> Huffman<T>::_decode(const std::vector<uint8_t> &loaded) {
         codes.insert(pair.second->code());
     std::vector<std::string> encoded = unpack(loaded, codes);
     std::vector<T> decoded;
+    std::string content;
     for (const auto &code: encoded) {
-        decoded.emplace_back(_decodebook[code]->symbol());
+        T symbol = _decodebook[code]->symbol();
+        decoded.emplace_back(symbol);
+        content += static_cast<wchar_t>(symbol);
     }
+    std::cout << content << std::endl;
     return decoded;
 }
 
@@ -112,7 +115,8 @@ std::vector<T> Huffman<T>::decode(const std::vector<uint8_t> &loaded) {
 
 template<class T>
 std::vector<T> Huffman<T>::decode(const std::string &fpath) {
-    std::vector<uint8_t> loaded = load(fpath);
+    std::vector<uint8_t> loaded = load_compressed(fpath);
+    std::cout << "loaded size " << loaded.size() << std::endl;
     return _decode(loaded);
 }
 
@@ -123,11 +127,14 @@ int main(int argc, char *argv[]) {
     }
     std::string fpath = argv[1];
     std::vector<uint8_t> source = load(fpath);
+    std::cout << source.size() << std::endl;
     Huffman<uint8_t> coder;
     auto encoded = coder.encode(source);
     std::vector<uint8_t> packed = pack(encoded);
+    std::cout << "packed size " << packed.size() << std::endl;
     save("compressed.bin", packed);
     std::vector<uint8_t> decoded = coder.decode("compressed.bin");
+    std::cout << "decoded size " << decoded.size() << std::endl;
     assert (decoded == source);
     std::cout << "Success!\n";
     std::cout << "Compressed to compressed.bin\n";

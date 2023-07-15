@@ -13,4 +13,6 @@ void save(std::string fpath, const std::vector<uint8_t>& packed);
 
 std::vector<uint8_t> load(std::string fpath);
 
+std::vector<uint8_t> load_compressed(std::string fpath);
+
 #endif
