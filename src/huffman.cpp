@@ -98,13 +98,10 @@ std::vector<T> Huffman<T>::_decode(const std::vector<uint8_t> &loaded) {
         codes.insert(pair.second->code());
     std::vector<std::string> encoded = unpack(loaded, codes);
     std::vector<T> decoded;
-    std::string content;
     for (const auto &code: encoded) {
         T symbol = _decodebook[code]->symbol();
         decoded.emplace_back(symbol);
-        content += static_cast<wchar_t>(symbol);
     }
-    std::cout << content << std::endl;
     return decoded;
 }
 
@@ -127,11 +124,11 @@ int main(int argc, char *argv[]) {
     }
     std::string fpath = argv[1];
     std::vector<uint8_t> source = load(fpath);
-    std::cout << source.size() << std::endl;
+    std::cout << "file size " << source.size() << std::endl;
     Huffman<uint8_t> coder;
     auto encoded = coder.encode(source);
     std::vector<uint8_t> packed = pack(encoded);
-    std::cout << "packed size " << packed.size() << std::endl;
+    std::cout << "compressed size " << packed.size() << std::endl;
     save("compressed.bin", packed);
     std::vector<uint8_t> decoded = coder.decode("compressed.bin");
     std::cout << "decoded size " << decoded.size() << std::endl;
