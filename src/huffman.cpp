@@ -118,7 +118,7 @@ std::vector<T> Huffman<T>::decode(const std::string &fpath) {
     return _decode(packed);
 }
 
-int main(int argc, char *argv[]) {
+int run(int argc, char *argv[]) {
     if (argc == 1) {
         std::cerr << "ERROR: Enter path to input file\n";
         return 1;

@@ -1,8 +1,9 @@
 #ifndef HUFFMAN_HPP
 #define HUFFMAN_HPP
 
-#include<string>
-#include<memory>
+#include <string>
+#include <memory>
+#include <queue>
 #include "node.hpp"
 
 template <class T>
