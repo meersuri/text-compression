@@ -4,15 +4,21 @@
 #include <vector>
 #include <unordered_set>
 #include <string>
+#include <memory>
 
-std::vector<uint8_t> pack(const std::vector<std::string>& encoded);
+struct PackedData {
+    std::vector<char> data;
+    uint64_t content_len;
+};
 
-std::vector<std::string> unpack(const std::vector<uint8_t>& packed, std::unordered_set<std::string> codes);
+std::shared_ptr<PackedData> pack(const std::vector<std::string>& encoded);
 
-void save(std::string fpath, const std::vector<uint8_t>& packed);
+std::vector<std::string> unpack(const std::shared_ptr<PackedData> packed, std::unordered_set<std::string> codes);
 
-std::vector<uint8_t> load(std::string fpath);
+void save_compressed(std::string fpath, const std::shared_ptr<PackedData> packed);
 
-std::vector<uint8_t> load_compressed(std::string fpath);
+std::vector<char> load(std::string fpath);
+
+std::shared_ptr<PackedData> load_compressed(std::string fpath);
 
 #endif

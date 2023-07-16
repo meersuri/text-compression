@@ -16,11 +16,11 @@ class Huffman {
     void _dfs(std::shared_ptr<Node<T>> root, std::string code);
     void _build_codebook(std::shared_ptr<Node<T>> root);
     std::vector<std::string> _encode(const std::vector<T> &source);
-    std::vector<T> _decode(const std::vector<uint8_t> &packed);
+    std::vector<T> _decode(const std::shared_ptr<PackedData> packed);
     public:
         Huffman();
         std::vector<std::string> encode(const std::vector<T> &source);
-        std::vector<T> decode(const std::vector<uint8_t> &packed);
+        std::vector<T> decode(const std::shared_ptr<PackedData> packed);
         std::vector<T> decode(const std::string &fpath);
 };
 

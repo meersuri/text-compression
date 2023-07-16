@@ -68,7 +68,8 @@ template<class T>
 void Huffman<T>::_build_codebook(std::shared_ptr<Node<T>> root) {
     _dfs(root, "");
     for (const auto &pair: _node_map) {
-        _codebook[pair.first] = pair.second->code();
+        auto idx = static_cast<typename std::make_unsigned<T>::type>(pair.first);
+        _codebook[idx] = pair.second->code();
         _decodebook[pair.second->code()] = pair.second;
     }
 
@@ -92,11 +93,11 @@ std::vector<std::string> Huffman<T>::encode(const std::vector<T> &source) {
 }
 
 template<class T>
-std::vector<T> Huffman<T>::_decode(const std::vector<uint8_t> &loaded) {
+std::vector<T> Huffman<T>::_decode(std::shared_ptr<PackedData> data) {
     std::unordered_set<std::string> codes;
     for (const auto &pair: _node_map)
         codes.insert(pair.second->code());
-    std::vector<std::string> encoded = unpack(loaded, codes);
+    std::vector<std::string> encoded = unpack(data, codes);
     std::vector<T> decoded;
     for (const auto &code: encoded) {
         T symbol = _decodebook[code]->symbol();
@@ -106,15 +107,15 @@ std::vector<T> Huffman<T>::_decode(const std::vector<uint8_t> &loaded) {
 }
 
 template<class T>
-std::vector<T> Huffman<T>::decode(const std::vector<uint8_t> &loaded) {
-    return _decode(loaded);
+std::vector<T> Huffman<T>::decode(std::shared_ptr<PackedData> data) {
+    return _decode(data);
 }
 
 template<class T>
 std::vector<T> Huffman<T>::decode(const std::string &fpath) {
-    std::vector<uint8_t> loaded = load_compressed(fpath);
-    std::cout << "loaded size " << loaded.size() << std::endl;
-    return _decode(loaded);
+    std::shared_ptr<PackedData> packed = load_compressed(fpath);
+    std::cout << "loaded size " << packed->data.size() << std::endl;
+    return _decode(packed);
 }
 
 int main(int argc, char *argv[]) {
@@ -123,14 +124,14 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     std::string fpath = argv[1];
-    std::vector<uint8_t> source = load(fpath);
+    std::vector<char> source = load(fpath);
     std::cout << "file size " << source.size() << std::endl;
-    Huffman<uint8_t> coder;
+    Huffman<char> coder;
     auto encoded = coder.encode(source);
-    std::vector<uint8_t> packed = pack(encoded);
-    std::cout << "compressed size " << packed.size() << std::endl;
-    save("compressed.bin", packed);
-    std::vector<uint8_t> decoded = coder.decode("compressed.bin");
+    auto packed = pack(encoded);
+    std::cout << "compressed size " << packed->data.size() << std::endl;
+    save_compressed("compressed.bin", packed);
+    std::vector<char> decoded = coder.decode("compressed.bin");
     std::cout << "decoded size " << decoded.size() << std::endl;
     assert (decoded == source);
     std::cout << "Success!\n";
