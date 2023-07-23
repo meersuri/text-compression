@@ -71,9 +71,7 @@ void save_compressed(std::string fpath, const std::vector<std::string> &codebook
         assert (code.size() <= 255);
         uint8_t code_size = static_cast<uint8_t>(code.size());
         file.put(code_size);
-        std::cout << code << " " << static_cast<int>(code_size) << " ";
     }
-    std::cout << "\nchunks\n";
     uint8_t chunk = 0;
     uint32_t pos = 0;
     uint32_t packed_codebook_size = 0;
@@ -81,7 +79,6 @@ void save_compressed(std::string fpath, const std::vector<std::string> &codebook
         for (int i = 0; i < code.size(); ++i) {
             if (pos == 8) {
                 file.put(chunk);
-                std::cout << int(chunk) << " ";
                 pos = 0;
                 chunk = 0;
                 packed_codebook_size++;
@@ -100,7 +97,7 @@ void save_compressed(std::string fpath, const std::vector<std::string> &codebook
     file.put(EOF);
     file.close();
     auto header_size = 8 + 8 + 4 + codebook.size() + packed_codebook_size;
-    std::cout << "saved bytes " << packed->data.size() << "+" << header_size <<  std::endl;
+    std::cout << "serialized bytes: " << packed->data.size() << "+" << header_size <<  std::endl;
 }
 
 void save(std::string fpath, const std::vector<char> raw) {

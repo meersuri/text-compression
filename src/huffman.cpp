@@ -83,9 +83,6 @@ std::vector<std::string> Huffman<T>::_encode(const std::vector<T>& source) {
     for (const auto &s: source) {
         encoded.emplace_back(_node_map[s]->code());
     }
-    for (const auto &code: encoded)
-        std::cout << code << " ";
-    std::cout << std::endl;
     return encoded;
 }
 
@@ -103,13 +100,9 @@ std::vector<T> Huffman<T>::_decode(std::shared_ptr<PackedData> data) {
     for (const auto &code: _codebook)
         codes.insert(code);
     std::vector<std::string> encoded = unpack(data, codes);
-    for (const auto &code: encoded)
-        std::cout << code << " ";
-    std::cout << std::endl;
     std::vector<T> decoded;
     for (const auto &code: encoded) {
         T symbol = _decodebook[code];
-        std::cout << symbol << " ";
         decoded.emplace_back(symbol);
     }
     return decoded;
@@ -154,12 +147,10 @@ std::shared_ptr<PackedData> Huffman<T>::_load_compressed(const std::string &fpat
     uint8_t chunk = 0;
     uint32_t pos = 0;
     std::string code = "";
-    std::cout << "pos: " << file.tellg() << std::endl;
     auto curr_pos = file.tellg();
     file.seekg(0, std::ios_base::end);
     auto total_bytes = file.tellg();
     file.seekg(curr_pos);
-    std::cout << total_bytes << " " << file.tellg() << std::endl;
     auto packed_codebook_size = total_bytes - curr_pos - (file_size + 1);
     std::vector<char> packed_codebook(packed_codebook_size);
     file.read(packed_codebook.data(), packed_codebook_size); 
@@ -167,7 +158,6 @@ std::shared_ptr<PackedData> Huffman<T>::_load_compressed(const std::string &fpat
     int pi = 0;
     while (pi < packed_codebook.size()) {
         chunk = packed_codebook[pi++];
-        std::cout << ci << " " << chunk << std::endl;
         for (int i = 7; i >= 0; --i) {
             if (chunk & (1 << i))
                 code += "1";
@@ -179,14 +169,11 @@ std::shared_ptr<PackedData> Huffman<T>::_load_compressed(const std::string &fpat
                     break;
                 _codebook[ci++] = code;
                 code = "";
-                std::cout << code << " ";
             }
         }
     }
-    std::cout << "pos: " << file.tellg() << std::endl;
     file.read(packed->data.data(), file_size);
     for (int i = 0; i < codebook_size; ++i) {
-        std::cout << i + std::numeric_limits<T>::lowest() << " ";
         if (_codebook[i].size() == 0)
             continue;
         _decodebook[_codebook[i]] = i + std::numeric_limits<T>::lowest();
