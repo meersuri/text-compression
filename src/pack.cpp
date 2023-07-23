@@ -47,7 +47,7 @@ std::vector<std::string> unpack(const std::shared_ptr<PackedData> packed, std::u
             else
                 code += "0";
             if (codes.find(code) != codes.end()) {
-                encoded.push_back(code);
+                encoded.emplace_back(code);
                 code = "";
             }
         }
@@ -93,7 +93,7 @@ void save_compressed(std::string fpath, const std::vector<std::string> &codebook
                 chunk <<= 1;
         }
     }
-    chunk <<= 8 - pos;
+    chunk <<= 7 - pos;
     file.put(chunk);
     packed_codebook_size++;
     file.write(packed->data.data(), packed->data.size());
