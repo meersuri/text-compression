@@ -15,10 +15,10 @@ std::shared_ptr<PackedData> pack(const std::vector<std::string>& encoded);
 
 std::vector<std::string> unpack(const std::shared_ptr<PackedData> packed, std::unordered_set<std::string> codes);
 
-void save_compressed(std::string fpath, const std::shared_ptr<PackedData> packed);
+void save_compressed(std::string fpath, const std::vector<std::string> &codebook, std::shared_ptr<PackedData> packed);
+
+void save(std::string fpath, const std::vector<char> raw);
 
 std::vector<char> load(std::string fpath);
-
-std::shared_ptr<PackedData> load_compressed(std::string fpath);
 
 #endif

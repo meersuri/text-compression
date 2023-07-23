@@ -56,18 +56,60 @@ std::vector<std::string> unpack(const std::shared_ptr<PackedData> packed, std::u
     return encoded;
 }
 
-void save_compressed(std::string fpath, const std::shared_ptr<PackedData> packed) {
+void save_compressed(std::string fpath, const std::vector<std::string> &codebook, const std::shared_ptr<PackedData> packed) {
     auto file = std::ofstream(fpath, std::ios::binary);
     if (!file.is_open())
         throw std::runtime_error("Couldn't open file");
     uint64_t file_size = packed->data.size();
     uint64_t content_len = packed->content_len;
+    uint32_t codebook_size = codebook.size();
+
     file.write(reinterpret_cast<const char*>(&file_size), 8);
     file.write(reinterpret_cast<const char*>(&content_len), 8);
+    file.write(reinterpret_cast<const char*>(&codebook_size), 4);
+    for (const auto &code: codebook) {
+        assert (code.size() <= 255);
+        uint8_t code_size = static_cast<uint8_t>(code.size());
+        file.put(code_size);
+        std::cout << code << " " << static_cast<int>(code_size) << " ";
+    }
+    std::cout << "\nchunks\n";
+    uint8_t chunk = 0;
+    uint32_t pos = 0;
+    uint32_t packed_codebook_size = 0;
+    for (const auto &code: codebook) {
+        for (int i = 0; i < code.size(); ++i) {
+            if (pos == 8) {
+                file.put(chunk);
+                std::cout << int(chunk) << " ";
+                pos = 0;
+                chunk = 0;
+                packed_codebook_size++;
+            }
+            if (code[i] == '1')
+                chunk |= 1;
+            pos++;
+            if (pos < 8)
+                chunk <<= 1;
+        }
+    }
+    chunk <<= 8 - pos;
+    file.put(chunk);
+    packed_codebook_size++;
     file.write(packed->data.data(), packed->data.size());
     file.put(EOF);
     file.close();
-    std::cout << "saved bytes " << packed->data.size() << "+" << 17 <<  std::endl;
+    auto header_size = 8 + 8 + 4 + codebook.size() + packed_codebook_size;
+    std::cout << "saved bytes " << packed->data.size() << "+" << header_size <<  std::endl;
+}
+
+void save(std::string fpath, const std::vector<char> raw) {
+    auto file = std::ofstream(fpath, std::ios::binary);
+    if (!file.is_open())
+        throw std::runtime_error("Couldn't open file");
+    file.write(raw.data(), raw.size());
+    file.put(EOF);
+    file.close();
 }
 
 std::vector<char> load(std::string fpath) {
@@ -82,22 +124,6 @@ std::vector<char> load(std::string fpath) {
     file.close();
     return bytes;
 }
-
-std::shared_ptr<PackedData> load_compressed(std::string fpath) {
-    auto file = std::ifstream(fpath, std::ios::binary);
-    if (!file.is_open())
-        throw std::runtime_error("Couldn't open file");
-    uint64_t file_size, content_len;
-    auto packed = std::make_shared<PackedData>();
-    file.read(reinterpret_cast<char*>(&file_size), 8);
-    file.read(reinterpret_cast<char*>(&packed->content_len), 8);
-    packed->data.resize(file_size);
-    file.read(packed->data.data(), file_size);
-    std::cout << "loaded bytes " << file_size << std::endl;
-    file.close();
-    return packed;
-}
-
 
 int run() {
     std::unordered_set<std::string> codes{
@@ -121,17 +147,9 @@ int run() {
         "1110"
     };
     auto packed = pack(encoded);
-    save_compressed("packed.bin", packed);
     std::cout << "packed:\n";
     for (const auto& x: packed->data)
         std::cout << static_cast<int>(x) << ",";
     std::cout << '\n';
-    std::cout << "unpacked:\n";
-    auto loaded = load_compressed("packed.bin");
-    auto unpacked = unpack(loaded, codes);
-    for (const auto& x: unpacked)
-        std::cout << x << ",";
-    std::cout << '\n';
-    assert (unpacked == encoded);
     return 0;
 }

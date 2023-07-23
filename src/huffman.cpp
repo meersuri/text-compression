@@ -7,6 +7,8 @@
 #include<unordered_set>
 #include<memory>
 #include<cassert>
+#include<fstream>
+#include<limits>
 
 #include "pack.hpp"
 #include "node.hpp"
@@ -68,9 +70,9 @@ template<class T>
 void Huffman<T>::_build_codebook(std::shared_ptr<Node<T>> root) {
     _dfs(root, "");
     for (const auto &pair: _node_map) {
-        auto idx = static_cast<typename std::make_unsigned<T>::type>(pair.first);
+        int idx = static_cast<int>(pair.first) - static_cast<int>(std::numeric_limits<T>::lowest());
         _codebook[idx] = pair.second->code();
-        _decodebook[pair.second->code()] = pair.second;
+        _decodebook[pair.second->code()] = pair.second->symbol();
     }
 
 }
@@ -81,6 +83,9 @@ std::vector<std::string> Huffman<T>::_encode(const std::vector<T>& source) {
     for (const auto &s: source) {
         encoded.emplace_back(_node_map[s]->code());
     }
+    for (const auto &code: encoded)
+        std::cout << code << " ";
+    std::cout << std::endl;
     return encoded;
 }
 
@@ -95,12 +100,16 @@ std::vector<std::string> Huffman<T>::encode(const std::vector<T> &source) {
 template<class T>
 std::vector<T> Huffman<T>::_decode(std::shared_ptr<PackedData> data) {
     std::unordered_set<std::string> codes;
-    for (const auto &pair: _node_map)
-        codes.insert(pair.second->code());
+    for (const auto &code: _codebook)
+        codes.insert(code);
     std::vector<std::string> encoded = unpack(data, codes);
+    for (const auto &code: encoded)
+        std::cout << code << " ";
+    std::cout << std::endl;
     std::vector<T> decoded;
     for (const auto &code: encoded) {
-        T symbol = _decodebook[code]->symbol();
+        T symbol = _decodebook[code];
+        std::cout << symbol << " ";
         decoded.emplace_back(symbol);
     }
     return decoded;
@@ -113,9 +122,76 @@ std::vector<T> Huffman<T>::decode(std::shared_ptr<PackedData> data) {
 
 template<class T>
 std::vector<T> Huffman<T>::decode(const std::string &fpath) {
-    std::shared_ptr<PackedData> packed = load_compressed(fpath);
+    std::shared_ptr<PackedData> packed = _load_compressed(fpath);
     std::cout << "loaded size " << packed->data.size() << std::endl;
     return _decode(packed);
+}
+
+template<class T>
+std::shared_ptr<PackedData> Huffman<T>::_load_compressed(const std::string &fpath) {
+    auto file = std::ifstream(fpath, std::ios::binary);
+    if (!file.is_open())
+        throw std::runtime_error("Couldn't open file");
+    uint64_t file_size, content_len;
+    auto packed = std::make_shared<PackedData>();
+    file.read(reinterpret_cast<char*>(&file_size), 8);
+    packed->data.resize(file_size);
+    file.read(reinterpret_cast<char*>(&packed->content_len), 8);
+    uint32_t codebook_size;
+    file.read(reinterpret_cast<char*>(&codebook_size), 4);
+    std::unordered_set<uint32_t> offsets(codebook_size);
+    std::vector<bool> missing_codes(codebook_size, false);
+    uint32_t offset = 0;
+    for (int i = 0; i < codebook_size; ++i) {
+        auto code_size = file.get();
+        if (code_size == 0) {
+            missing_codes[i] = true;
+            continue;
+        }
+        offset += static_cast<uint32_t>(code_size);
+        offsets.emplace(offset);
+    }
+    uint8_t chunk = 0;
+    uint32_t pos = 0;
+    std::string code = "";
+    std::cout << "pos: " << file.tellg() << std::endl;
+    auto curr_pos = file.tellg();
+    file.seekg(0, std::ios_base::end);
+    auto total_bytes = file.tellg();
+    file.seekg(curr_pos);
+    std::cout << total_bytes << " " << file.tellg() << std::endl;
+    auto packed_codebook_size = total_bytes - curr_pos - (file_size + 1);
+    std::vector<char> packed_codebook(packed_codebook_size);
+    file.read(packed_codebook.data(), packed_codebook_size); 
+    int ci = 0;
+    int pi = 0;
+    while (pi < packed_codebook.size()) {
+        chunk = packed_codebook[pi++];
+        std::cout << ci << " " << chunk << std::endl;
+        for (int i = 7; i >= 0; --i) {
+            if (chunk & (1 << i))
+                code += "1";
+            else
+                code += "0";
+            if (offsets.find(++pos) != offsets.end()) {
+                while (ci < codebook_size && missing_codes[ci]) { ci++; }
+                if (ci == codebook_size)
+                    break;
+                _codebook[ci++] = code;
+                code = "";
+                std::cout << code << " ";
+            }
+        }
+    }
+    std::cout << "pos: " << file.tellg() << std::endl;
+    file.read(packed->data.data(), file_size);
+    for (int i = 0; i < codebook_size; ++i) {
+        std::cout << i + std::numeric_limits<T>::lowest() << " ";
+        if (_codebook[i].size() == 0)
+            continue;
+        _decodebook[_codebook[i]] = i + std::numeric_limits<T>::lowest();
+    }
+    return packed;
 }
 
 int run(int argc, char *argv[]) {
@@ -130,7 +206,7 @@ int run(int argc, char *argv[]) {
     auto encoded = coder.encode(source);
     auto packed = pack(encoded);
     std::cout << "compressed size " << packed->data.size() << std::endl;
-    save_compressed("compressed.bin", packed);
+    save_compressed("compressed.bin", coder.codebook(), packed);
     std::vector<char> decoded = coder.decode("compressed.bin");
     std::cout << "decoded size " << decoded.size() << std::endl;
     assert (decoded == source);
