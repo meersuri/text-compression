@@ -30,6 +30,11 @@ int main(int argc, char *argv[]) {
         std::cout << "Compressed to " << out_fpath << '\n';
     }
     if (extract) {
+        auto pos = fpath.find_last_of(".");
+        if (pos != std::string::npos && fpath.substr(pos) != ".bin") {
+            std::cerr << "Input file: " << fpath << " is not a compressed file\n";
+            return -1;
+        }
         std::vector<char> decoded = coder.decode(fpath);
         std::cout << "decoded size " << decoded.size() << std::endl;
         std::cout << "Extracted to " << out_fpath << '\n';
