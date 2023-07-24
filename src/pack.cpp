@@ -90,7 +90,8 @@ void save_compressed(std::string fpath, const std::vector<std::string> &codebook
                 chunk <<= 1;
         }
     }
-    chunk <<= 7 - pos;
+    if (pos < 8)
+        chunk <<= 7 - pos;
     file.put(chunk);
     packed_codebook_size++;
     file.write(packed->data.data(), packed->data.size());
